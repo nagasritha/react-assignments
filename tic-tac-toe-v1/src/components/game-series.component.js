@@ -1,8 +1,8 @@
-import React,{useState} from 'react';
+import React, { useState } from 'react';
 import { GameScoreboard } from './game-scoreboard.component';
 import { Game } from './game.component';
 import { GameSeriesContext } from '../context/game-series.context';
-
+import { GameContextProvider } from '../context/game.Context';
 export const GameSeries = () => {
     let initialState = {
         games: 0,
@@ -37,14 +37,17 @@ export const GameSeries = () => {
         return state;
     };
 
-    
-        return (
-            <GameSeriesContext.Provider value={{ state, handleGameResult }}>
-                <div className='game-series-component'>
-                    <GameScoreboard />
-                    <Game onGameResult={handleGameResult} />
-                </div>
-            </GameSeriesContext.Provider>
 
-        );
+    return (
+        <GameSeriesContext.Provider value={{ state, handleGameResult }}>
+            <div className='game-series-component'>
+                <GameScoreboard />
+
+                <Game onGameResult={handleGameResult} />
+
+
+            </div>
+        </GameSeriesContext.Provider>
+
+    );
 }

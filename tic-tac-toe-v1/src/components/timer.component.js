@@ -1,206 +1,94 @@
-// import React, { Component } from 'react'
-
-// export class Timer extends Component {
-
-//     state = {
-//         ms : 0,
-//         timerCondition : this.props.timerCondition,
-//         running:false
-//     }
-
-//     toggle=()=>{
-//         let {running} = this.state;
-
-//         if(running || this.iid){
-//             clearInterval(this.iid);
-//         }else{
-//             this.iid = setInterval(()=>this.setState({ms:this.state.ms+100}),100);
-//         }
-//         this.setState(state=>state.running = !state.running);
-//     }
-
-//     start=()=>{
-//         if(this.iid) {
-//             clearInterval(this.iid);
-//         }
-//         this.iid=setInterval(()=>this.setState({ms:this.state.ms+100,running:true}),100);
-//     }
-
-//     stop=()=>{
-//         if(this.iid) {
-//             clearInterval(this.iid);
-//         }
-//         this.setState({running:false});
-//     }
-//     reset=()=>{
-//         if(this.iid){
-//             clearInterval(this.iid);
-//             this.setState({ms:0,running:false})
-//         }
-//     }
-
-//     // componentDidMount(){
-//     //     let {name,currentPlayer} = this.props;
-//     //     console.log(name,currentPlayer);
-//     //     if(name===currentPlayer){
-//     //         this.toggle();
-//     //     }else{
-//     //         this.reset();
-//     //     }
-//     // }
-
-//     componentDidUnMount(){
-//         clearInterval(this.iid);
-
-//     }
-
-//     componentDidUpdate(){
-//         console.log('updated')
-//         let {name,timerCondition} = this.props;
-//         console.log(name,timerCondition);
-//         if(timerCondition){
-//             this.start();
-//             //this.toggle();
-//         }else{
-//             //this.stop();
-//             //this.toggle();
-//         }
-//     }
-
-//     formateTime= (num)=>{
-//         if(num<10){
-//             return `0${num}`;
-//         }else{
-//             return num;
-//         }
-//     }
-//     formateMiliseconds= (num)=>{
-//         if(num<100){
-//             return `00${num}`;
-//         }else if(num<10){
-//             return `0${num}`;
-//         }else{
-//             return num;
-//         }
-//     }
-
-//     render() {
-//         let ms = this.state.ms;
-//         let _ms = ms%1000;
-//         let sec = Math.ceil((ms-_ms)/1000);
-//         let minutes = Math.round(sec/60); 
-//         //console.log(this.props.name,this.props.currentPlayer);
-//         return <div>
-
-//             <div className='timer-component'>
-//                 <h1>{this.props.name}</h1>
-//                 <div className='timer'>
-//                     <span className='minites'>{this.formateTime(minutes)}:</span>
-//                     <span className='seconds'>{this.formateTime(sec)}.</span>
-//                     <span className='milliseconds'>{this.formateMiliseconds(_ms)}</span>
-//                 </div>
-//                 <button onClick={this.toggle}>{this.state.running ? 'Stop' :'Pause'} </button>
-//                 <button onClick={this.reset}>Reset</button>
-//             </div>
-//         </div>
-//     }
-// }
-
-import React, { Component } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { If } from './if.component';
 
-export class Timer extends Component {
-    state = {
-        ms: 0,
-        running: false
+export const Timer = forwardRef(({ name, timerCondition, restarted }, ref) => {
+    const [ms, setMs] = useState(0);
+    const [running, setRunning] = useState(false);
+    const intervalId = useRef(null); // For storing the interval ID
+
+    // Start the timer
+    const start = () => {
+        if (intervalId.current) clearInterval(intervalId.current);
+        intervalId.current = setInterval(() => {
+            setMs(prevMs => prevMs + 100);
+        }, 100);
+        setRunning(true);
     };
 
-    toggle = () => {
-        let { running } = this.state;
-
-        if (running || this.iid) {
-            clearInterval(this.iid);
-        } else {
-            this.iid = setInterval(() => this.setState({ ms: this.state.ms + 100 }), 100);
-        }
-        this.setState(state => ({ running: !state.running }));
+    // Stop the timer
+    const stop = () => {
+        if (intervalId.current) clearInterval(intervalId.current);
+        setRunning(false);
     };
 
-    start = () => {
-        if (this.iid) {
-            clearInterval(this.iid);
-        }
-        this.iid = setInterval(() => this.setState({ ms: this.state.ms + 100, running: true }), 100);
+    // Reset the timer
+    const reset = () => {
+        if (intervalId.current) clearInterval(intervalId.current);
+        setMs(0);
+        setRunning(false);
     };
 
-    stop = () => {
-        if (this.iid) {
-            clearInterval(this.iid);
+    // Expose start, stop, and reset functions to parent components via ref
+    useImperativeHandle(ref, () => ({
+        start,
+        stop,
+        reset,
+        ms
+    }));
+
+    // Effect to handle timerCondition and restarted props changes
+    useEffect(() => {
+        if (timerCondition && !running) {
+            start();
+        } else if (!timerCondition && running) {
+            stop();
         }
-        this.setState({ running: false });
+    }, [timerCondition, running]);
+
+    useEffect(() => {
+        if (restarted) {
+            reset();
+        }
+    }, [restarted]);
+
+    // Cleanup interval on unmount
+    useEffect(() => {
+        return () => {
+            clearInterval(intervalId.current);
+        };
+    }, []);
+
+    const formatTime = num => (num < 10 ? `0${num}` : num);
+
+    const formatMilliseconds = num => {
+        if (num < 10) return `00${num}`;
+        if (num < 100) return `0${num}`;
+        return num;
     };
 
-    reset = () => {
-        if (this.iid) {
-            clearInterval(this.iid);
-            this.setState({ ms: 0, running: false });
-        }
-    };
-
-    componentDidUpdate(prevProps) {
-        if (prevProps.timerCondition !== this.props.timerCondition) {
-            if (this.props.timerCondition && !this.state.running) {
-                this.start();
-            } else if (!this.props.timerCondition && this.state.running) {
-                this.stop();
-            }
-        }
-        if(prevProps.restarted !== this.props.restarted && this.props.restarted){
-            this.reset();
-        }
-    }
-
-    componentWillUnmount() {
-        clearInterval(this.iid);
-    }
-
-    formatTime = num => (num < 10 ? `0${num}` : num);
-
-    formatMilliseconds = num => {
-        if (num < 10) {
-            return `00${num}`;
-        } else if (num < 100) {
-            return `0${num}`;
-        } else {
-            return num;
-        }
-    };
-
-    buttons = () => (
+    // Render buttons
+    const renderButtons = () => (
         <div>
-            <button onClick={this.toggle}>{this.state.running ? 'Stop' : 'Start'}</button>
-            <button onClick={this.reset}>Reset</button>
-
+            <button onClick={start}>{running ? 'Stop' : 'Start'}</button>
+            <button onClick={reset}>Reset</button>
         </div>
-    )
+    );
 
-    render() {
-        let ms = this.state.ms;
-        let _ms = ms % 1000;
-        let sec = Math.floor(ms / 1000);
-        let minutes = Math.floor(sec / 60);
-        sec = sec % 60;
+    // Calculate time components
+    const _ms = ms % 1000;
+    let sec = Math.floor(ms / 1000);
+    const minutes = Math.floor(sec / 60);
+    sec = sec % 60;
 
-        return (
-            <div className='timer-component'>
-                <h1>{this.props.name}</h1>
-                <div className='timer'>
-                    <span className='minutes'>{this.formatTime(minutes)}:</span>
-                    <span className='seconds'>{this.formatTime(sec)}.</span>
-                    <span className='milliseconds'>{this.formatMilliseconds(_ms)}</span>
-                </div>
-                <If condition='false' child={this.buttons} />
+    return (
+        <div className='timer-component'>
+            <h1>{name}</h1>
+            <div className='timer'>
+                <span className='minutes'>{formatTime(minutes)}:</span>
+                <span className='seconds'>{formatTime(sec)}.</span>
+                <span className='milliseconds'>{formatMilliseconds(_ms)}</span>
             </div>
-        );
-    }
-}
+            <If condition='false' child={renderButtons} />
+        </div>
+    );
+});

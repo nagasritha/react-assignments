@@ -7,12 +7,14 @@ import { TicTacToeGame } from '../services/tic-tac-toe-game.service';
 import { Timer } from './timer.component';
 import { GameSeriesContext } from '../context/game-series.context';
 import { GameContext } from '../context/game.Context';
+import { useTimerContext } from '../context/timer.comtext';
 
 export const Game = () => {
     const { handleGameResult: onGameResult } = useContext(GameSeriesContext);
-    const gameRef = useRef(new TicTacToeGame()); // Use a ref to store the game instance across renders
-    const playerChange = useRef(null); // Use ref to persist interval across renders
-    const gameResultSubmitted = useRef(false); // Flag to track if the result has been submitted
+    console.log(useTimerContext());
+    const gameRef = useRef(new TicTacToeGame());
+    const playerChange = useRef(null);
+    const gameResultSubmitted = useRef(false);
 
     const timers = {
         O: useRef(null),
@@ -33,7 +35,7 @@ export const Game = () => {
                     ? `'${game.winningPlayer}' Wins`
                     : 'Stalemate'
                 : `Next Player '${game.currentPlayer}'`,
-            moves: game.moves, // If moves are required for GameMoves component
+            moves: game.moves,
         };
         return state;
     };
@@ -42,17 +44,17 @@ export const Game = () => {
 
     useEffect(() => {
         if (state.isOver && !gameResultSubmitted.current) {
-            const OMs = timers.O.current.state.ms;
-            const XMs = timers.X.current.state.ms;
+            const OMs = timers.O.current.ms;
+            const XMs = timers.X.current.ms;
             onGameResult(state.winningPlayer, XMs, OMs, state.isStalemate);
-            gameResultSubmitted.current = true; // Mark that the result has been submitted
+            gameResultSubmitted.current = true; 
         }
     }, [state.isOver, state.winningPlayer, state.isStalemate, onGameResult]);
 
     const start = () => {
         const game = gameRef.current;
-        const OMs = timers.O.current.state.ms;
-        const XMs = timers.X.current.state.ms;
+        const OMs = timers.O.current.ms;
+        const XMs = timers.X.current.ms;
 
         if (playerChange.current) {
             clearInterval(playerChange.current);
@@ -103,34 +105,34 @@ export const Game = () => {
     };
 
     return (
-        <GameContext.Provider value={{state,handleMove}}>
+        <GameContext.Provider value={{ state, handleMove, reStart }}>
             <div className='body'>
-            <button onClick={start} className='restart-component'>
-                Start
-            </button>
-            <div className='game-component'>
-                <Status message={state.message} />
-                {state.isOver && <RestartButton onRestart={reStart} />}
-                <GameBoard/>
-                <div>
-                    <div className='same-row'>
-                        <Timer
-                            ref={timers.X}
-                            name='X'
-                            timerCondition={state.isRunning && state.next === 'X'}
-                            restarted={state.restarted}
-                        />
-                        <Timer
-                            ref={timers.O}
-                            name='O'
-                            timerCondition={state.isRunning && state.next === 'O'}
-                            restarted={state.restarted}
-                        />
+                <button onClick={start} className='restart-component'>
+                    Start
+                </button>
+                <div className='game-component'>
+                    <Status message={state.message} />
+                    {state.isOver && <RestartButton onRestart={reStart} />}
+                    <GameBoard />
+                    <div>
+                        <div className='same-row'>
+                            <Timer
+                                ref={timers.X}
+                                name='X'
+                                timerCondition={state.isRunning && state.next === 'X'}
+                                restarted={state.restarted}
+                            />
+                            <Timer
+                                ref={timers.O}
+                                name='O'
+                                timerCondition={state.isRunning && state.next === 'O'}
+                                restarted={state.restarted}
+                            />
+                        </div>
                     </div>
+                    <GameMoves moves={state.moves} />
                 </div>
-                <GameMoves moves={state.moves} />
             </div>
-        </div>
         </GameContext.Provider>
     );
 };

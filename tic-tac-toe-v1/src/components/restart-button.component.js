@@ -1,8 +1,7 @@
 import React from 'react';
-
-export const RestartButton = ({ onRestart }) => {
-    
-
+import { useGameContext } from '../context/game.Context';
+export const RestartButton = () => {
+    let {reStart:onRestart} = useGameContext();
 
     // if(!onRestart)
     //     return null; //do not display any ui
